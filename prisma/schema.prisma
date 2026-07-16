@@ -1,0 +1,51 @@
+/**
+ * Database schema — Prisma reads this and generates a typed client.
+ * Run `npx prisma migrate dev` to create SQL tables from these models.
+ */
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  GUEST
+  HOST
+  ADMIN
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  passwordHash  String
+  role          Role     @default(GUEST)
+  emailVerified Boolean  @default(false)
+  firstName     String
+  lastName      String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  sessions      Session[]
+}
+
+/**
+ * One row per logged-in device session.
+ * Enables safe token rotation, per-device logout, and reuse detection.
+ */
+model Session {
+  id               String    @id @default(cuid())
+  userId           String
+  user             User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  refreshTokenHash String
+  userAgent        String?
+  ipAddress        String?
+  expiresAt        DateTime
+  revokedAt        DateTime?
+  createdAt        DateTime  @default(now())
+
+  @@index([userId])
+}
